@@ -12,5 +12,8 @@
   "peerDependencies": {
     "react": ">=18",
     "react-dom": ">=18"
+  },
+  "exports": {
+    ".": "./src/index.ts"
   }
 }

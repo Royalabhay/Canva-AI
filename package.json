@@ -9,10 +9,15 @@
   "scripts": {
     "dev": "next dev apps/web",
     "build": "next build apps/web",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "dev:web": "next dev apps/web"
   },
   "dependencies": {
     "@canva-ai/editor": "file:packages/editor",
+    "@next/env": "^16.2.6",
+    "@supabase/ssr": "^0.10.3",
+    "@supabase/supabase-js": "^2.105.4",
+    "@tanstack/react-query": "^5.100.10",
     "@types/node": "latest",
     "@types/react": "latest",
     "@types/react-dom": "latest",
@@ -20,7 +25,10 @@
     "next": "latest",
     "react": "latest",
     "react-dom": "latest",
-    "zustand": "latest"
+    "zod": "^4.4.3",
+    "zustand": "latest",
+    "@canva-ai/database": "file:packages/database",
+    "@canva-ai/env": "file:packages/env"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.3.0",
@@ -28,5 +36,6 @@
     "postcss": "latest",
     "tailwindcss": "latest",
     "typescript": "latest"
-  }
+  },
+  "packageManager": "pnpm@9.15.4"
 }

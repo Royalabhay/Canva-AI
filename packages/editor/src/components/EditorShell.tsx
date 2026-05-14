@@ -5,6 +5,7 @@ import { editorSelectors, useEditorStore } from "../store/editorStore";
 import type { EditorContextValue, EditorTool } from "../types/editor";
 import { useFabricEditor } from "../hooks/useFabricEditor";
 import { useEditorKeyboard } from "../hooks/useEditorKeyboard";
+import { useEditorAutosave, type AutosaveConfig } from "../hooks/useEditorAutosave";
 
 const EditorContext = createContext<EditorContextValue | null>(null);
 
@@ -103,7 +104,7 @@ function LayerList() {
   );
 }
 
-function TopToolbar() {
+function TopToolbar({ autosaveStatus }: { autosaveStatus: string }) {
   const { actions } = useEditorContext();
   const zoom = useEditorStore(editorSelectors.zoom);
   const canUndo = useEditorStore(editorSelectors.canUndo);
@@ -125,6 +126,7 @@ function TopToolbar() {
         <ToolbarButton onClick={actions.zoomOut}>−</ToolbarButton>
         <button className="min-w-20 rounded-lg border border-slate-200 px-3 py-2 text-sm font-semibold" onClick={actions.resetZoom} type="button">{Math.round(zoom * 100)}%</button>
         <ToolbarButton onClick={actions.zoomIn}>+</ToolbarButton>
+        <span className="rounded-full bg-slate-100 px-3 py-2 text-xs font-semibold text-slate-500">{autosaveStatus}</span>
         <ToolbarButton onClick={actions.exportPng}>Export</ToolbarButton>
       </div>
     </header>
@@ -239,8 +241,9 @@ function ColorField({ label, onChange, value }: { label: string; onChange: (valu
   );
 }
 
-export function EditorShell() {
+export function EditorShell({ autosave }: { autosave?: AutosaveConfig } = {}) {
   const editor = useFabricEditor();
+  const autosaveStatus = useEditorAutosave(autosave ?? { enabled: false });
   useEditorKeyboard(editor.actions);
 
   return (
@@ -249,7 +252,7 @@ export function EditorShell() {
         <div className="flex h-screen w-screen overflow-hidden bg-white text-slate-950">
           <LeftSidebar />
           <div className="flex min-w-0 flex-1 flex-col">
-            <TopToolbar />
+            <TopToolbar autosaveStatus={autosaveStatus} />
             <CanvasStage />
           </div>
           <RightPropertiesPanel />
