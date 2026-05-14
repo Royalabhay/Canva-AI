@@ -38,6 +38,8 @@ export const serverEnvSchema = clientEnvSchema.extend({
   GITHUB_CLIENT_SECRET: z.string().optional().default(""),
   SUPABASE_STORAGE_BUCKET_UPLOADS: z.string().min(1).default("uploads"),
   SUPABASE_STORAGE_BUCKET_EXPORTS: z.string().min(1).default("exports"),
+  SUPABASE_STORAGE_BUCKET_THUMBNAILS: z.string().min(1).default("thumbnails"),
+  SUPABASE_STORAGE_BUCKET_RENDER_TEMP: z.string().min(1).default("render-temp"),
   SUPABASE_STORAGE_BUCKET_TEMPLATES: z.string().min(1).default("templates"),
   SUPABASE_STORAGE_BUCKET_BRAND_ASSETS: z.string().min(1).default("brand-assets"),
   SIGNED_UPLOAD_URL_TTL_SECONDS: numberFromEnv(600),
@@ -50,7 +52,10 @@ export const serverEnvSchema = clientEnvSchema.extend({
   RENDERING_SERVICE_URL: urlWithDevFallback("RENDERING_SERVICE_URL", "http://localhost:3001"),
   RENDERING_SERVICE_TOKEN: requiredInProduction("RENDERING_SERVICE_TOKEN", "dev-render-token"),
   EXPORT_WEBHOOK_SECRET: requiredInProduction("EXPORT_WEBHOOK_SECRET", "dev-export-secret"),
-  CANVAS_RENDER_TIMEOUT_MS: numberFromEnv(30_000)
+  CANVAS_RENDER_TIMEOUT_MS: numberFromEnv(30_000),
+  REDIS_URL: z.string().optional().default("redis://127.0.0.1:6379"),
+  EXPORT_WORKER_CONCURRENCY: numberFromEnv(2),
+  EXPORT_RATE_LIMIT_PER_MINUTE: numberFromEnv(30)
 });
 
 export type ClientEnv = z.infer<typeof clientEnvSchema>;

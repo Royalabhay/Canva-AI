@@ -24,6 +24,12 @@
       ],
       "@canva-ai/editor/*": [
         "packages/editor/src/*"
+      ],
+      "@canva-ai/export": [
+        "packages/export/src/index.ts"
+      ],
+      "@canva-ai/export/*": [
+        "packages/export/src/*"
       ]
     },
     "plugins": [

@@ -1,11 +1,13 @@
 "use client";
 
-import { createContext, useContext, useEffect, useRef, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import { editorSelectors, useEditorStore } from "../store/editorStore";
 import type { EditorContextValue, EditorTool } from "../types/editor";
 import { useFabricEditor } from "../hooks/useFabricEditor";
 import { useEditorKeyboard } from "../hooks/useEditorKeyboard";
 import { useEditorAutosave, type AutosaveConfig } from "../hooks/useEditorAutosave";
+import { AIAssistantPanel } from "./AIAssistantPanel";
+import { ExportModal } from "./ExportModal";
 
 const EditorContext = createContext<EditorContextValue | null>(null);
 
@@ -105,7 +107,7 @@ function LayerList() {
   );
 }
 
-function TopToolbar({ autosaveStatus }: { autosaveStatus: string }) {
+function TopToolbar({ autosaveStatus, onOpenExport }: { autosaveStatus: string; onOpenExport: () => void }) {
   const { actions } = useEditorContext();
   const zoom = useEditorStore(editorSelectors.zoom);
   const canUndo = useEditorStore(editorSelectors.canUndo);
@@ -128,7 +130,7 @@ function TopToolbar({ autosaveStatus }: { autosaveStatus: string }) {
         <button className="min-w-20 rounded-lg border border-slate-200 px-3 py-2 text-sm font-semibold" onClick={actions.resetZoom} type="button">{Math.round(zoom * 100)}%</button>
         <ToolbarButton onClick={actions.zoomIn}>+</ToolbarButton>
         <span className="rounded-full bg-slate-100 px-3 py-2 text-xs font-semibold text-slate-500">{autosaveStatus}</span>
-        <ToolbarButton onClick={actions.exportPng}>Export</ToolbarButton>
+        <ToolbarButton onClick={onOpenExport}>Export</ToolbarButton>
       </div>
     </header>
   );
@@ -185,6 +187,7 @@ function RightPropertiesPanel() {
           <p className="text-sm text-slate-500">{selectedIds.length} objects selected. Use toolbar alignment and layer ordering.</p>
         )}
       </ShellSection>
+      <AIAssistantPanel actions={actions} />
       {activeObject ? (
         <>
           <ShellSection title="Position">
@@ -242,11 +245,12 @@ function ColorField({ label, onChange, value }: { label: string; onChange: (valu
   );
 }
 
-export function EditorShell({ autosave, initialSnapshot }: { autosave?: AutosaveConfig; initialSnapshot?: import("../types/editor").CanvasSnapshot | null } = {}) {
+export function EditorShell({ autosave, initialSnapshot, workspaceId }: { autosave?: AutosaveConfig; initialSnapshot?: import("../types/editor").CanvasSnapshot | null; workspaceId?: string } = {}) {
   const editor = useFabricEditor();
   const autosaveStatus = useEditorAutosave(autosave ?? { enabled: false });
   useEditorKeyboard(editor.actions);
   const loadedInitialSnapshotRef = useRef(false);
+  const [isExportOpen, setExportOpen] = useState(false);
   useEffect(() => {
     if (!initialSnapshot || loadedInitialSnapshotRef.current) return;
     loadedInitialSnapshotRef.current = true;
@@ -259,11 +263,12 @@ export function EditorShell({ autosave, initialSnapshot }: { autosave?: Autosave
         <div className="flex h-screen w-screen overflow-hidden bg-white text-slate-950">
           <LeftSidebar />
           <div className="flex min-w-0 flex-1 flex-col">
-            <TopToolbar autosaveStatus={autosaveStatus} />
+            <TopToolbar autosaveStatus={autosaveStatus} onOpenExport={() => setExportOpen(true)} />
             <CanvasStage />
           </div>
           <RightPropertiesPanel />
         </div>
+      {isExportOpen ? <ExportModal getSnapshot={editor.actions.serialize} onClose={() => setExportOpen(false)} workspaceId={workspaceId} /> : null}
       </CanvasRefsContext.Provider>
     </EditorContext.Provider>
   );

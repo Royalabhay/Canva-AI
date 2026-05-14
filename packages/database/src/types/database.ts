@@ -3,6 +3,9 @@ export type Json = string | number | boolean | null | { [key: string]: Json | un
 export type Role = "owner" | "admin" | "editor" | "viewer";
 export type AssetKind = "image" | "video" | "font" | "audio" | "document" | "other";
 export type ActivityAction = "created" | "updated" | "deleted" | "duplicated" | "uploaded" | "exported" | "invited";
+export type ExportFormat = "png" | "jpg" | "svg" | "pdf" | "mp4";
+export type ExportStatus = "queued" | "active" | "rendering" | "uploading" | "completed" | "failed" | "cancelled";
+export type ThumbnailSubjectType = "project" | "template" | "design" | "ai_preview";
 
 export interface Database {
   public: {
@@ -19,6 +22,10 @@ export interface Database {
       templates: { Row: Template; Insert: TemplateInsert; Update: TemplateUpdate };
       brand_kits: { Row: BrandKit; Insert: BrandKitInsert; Update: BrandKitUpdate };
       activity_logs: { Row: ActivityLog; Insert: ActivityLogInsert; Update: ActivityLogUpdate };
+      exports: { Row: ExportRecord; Insert: ExportRecordInsert; Update: ExportRecordUpdate };
+      export_jobs: { Row: ExportJobRecord; Insert: ExportJobRecordInsert; Update: ExportJobRecordUpdate };
+      render_tasks: { Row: RenderTaskRecord; Insert: RenderTaskRecordInsert; Update: RenderTaskRecordUpdate };
+      thumbnails: { Row: ThumbnailRecord; Insert: ThumbnailRecordInsert; Update: ThumbnailRecordUpdate };
     };
     Views: Record<string, never>;
     Functions: Record<string, never>;
@@ -26,6 +33,9 @@ export interface Database {
       workspace_role: Role;
       asset_kind: AssetKind;
       activity_action: ActivityAction;
+      export_format: ExportFormat;
+      export_status: ExportStatus;
+      thumbnail_subject_type: ThumbnailSubjectType;
     };
     CompositeTypes: Record<string, never>;
   };
@@ -86,3 +96,19 @@ export interface AssetFolder extends Timestamped { workspace_id: string; parent_
 export interface AssetTag extends Timestamped { workspace_id: string; name: string; slug: string; color: string | null }
 export interface BrandColor extends Timestamped { brand_kit_id: string; workspace_id: string; name: string; value: string; sort_order: number }
 export interface BrandFont extends Timestamped { brand_kit_id: string; workspace_id: string; name: string; family: string; weight: string | null; style: string | null; asset_id: string | null; metadata: Json }
+
+export interface ExportRecord extends Timestamped { workspace_id: string; project_id: string | null; design_id: string | null; template_id: string | null; requested_by: string; format: ExportFormat; status: ExportStatus; options: Json; bucket: string | null; storage_path: string | null; mime_type: string | null; size_bytes: number | null; width: number | null; height: number | null; page_count: number; progress: number; metadata: Json; error_message: string | null; signed_url_expires_at: string | null; expires_at: string | null; completed_at: string | null }
+export type ExportRecordInsert = Partial<Timestamped> & Pick<ExportRecord, "workspace_id" | "requested_by" | "format"> & Partial<Omit<ExportRecord, keyof Timestamped | "workspace_id" | "requested_by" | "format">>;
+export type ExportRecordUpdate = Partial<Omit<ExportRecord, "id" | "created_at" | "workspace_id" | "requested_by">>;
+
+export interface ExportJobRecord { id: string; export_id: string; workspace_id: string; status: ExportStatus; priority: number; attempts: number; max_attempts: number; progress: number; payload: Json; result: Json; last_error: string | null; locked_by: string | null; locked_at: string | null; scheduled_at: string; started_at: string | null; completed_at: string | null; created_at: string; updated_at: string }
+export type ExportJobRecordInsert = Partial<ExportJobRecord> & Pick<ExportJobRecord, "export_id" | "workspace_id" | "payload">;
+export type ExportJobRecordUpdate = Partial<Omit<ExportJobRecord, "id" | "created_at" | "export_id" | "workspace_id">>;
+
+export interface RenderTaskRecord { id: string; export_id: string; export_job_id: string; status: ExportStatus; renderer: string; input: Json; output: Json; error_message: string | null; duration_ms: number | null; memory_peak_mb: number | null; created_at: string; updated_at: string }
+export type RenderTaskRecordInsert = Partial<RenderTaskRecord> & Pick<RenderTaskRecord, "export_id" | "export_job_id" | "renderer">;
+export type RenderTaskRecordUpdate = Partial<Omit<RenderTaskRecord, "id" | "created_at" | "export_id" | "export_job_id">>;
+
+export interface ThumbnailRecord { id: string; workspace_id: string; subject_type: ThumbnailSubjectType; subject_id: string; bucket: string; storage_path: string; mime_type: string; width: number; height: number; size_bytes: number | null; metadata: Json; generated_at: string; expires_at: string | null; created_at: string; updated_at: string }
+export type ThumbnailRecordInsert = Partial<ThumbnailRecord> & Pick<ThumbnailRecord, "workspace_id" | "subject_type" | "subject_id" | "bucket" | "storage_path" | "width" | "height">;
+export type ThumbnailRecordUpdate = Partial<Omit<ThumbnailRecord, "id" | "created_at" | "workspace_id" | "subject_type" | "subject_id">>;
