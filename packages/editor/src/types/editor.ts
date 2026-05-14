@@ -50,6 +50,7 @@ export interface EditorActions {
   paste: () => Promise<void>;
   duplicate: () => Promise<void>;
   removeSelection: () => void;
+  selectById: (id: string) => void;
   zoomIn: () => void;
   zoomOut: () => void;
   resetZoom: () => void;

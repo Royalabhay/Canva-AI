@@ -13,7 +13,9 @@
     "dev:web": "next dev apps/web"
   },
   "dependencies": {
+    "@canva-ai/database": "file:packages/database",
     "@canva-ai/editor": "file:packages/editor",
+    "@canva-ai/env": "file:packages/env",
     "@next/env": "^16.2.6",
     "@supabase/ssr": "^0.10.3",
     "@supabase/supabase-js": "^2.105.4",
@@ -26,11 +28,10 @@
     "react": "latest",
     "react-dom": "latest",
     "zod": "^4.4.3",
-    "zustand": "latest",
-    "@canva-ai/database": "file:packages/database",
-    "@canva-ai/env": "file:packages/env"
+    "zustand": "latest"
   },
   "devDependencies": {
+    "@playwright/test": "^1.60.0",
     "@tailwindcss/postcss": "^4.3.0",
     "autoprefixer": "latest",
     "postcss": "latest",

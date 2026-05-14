@@ -85,6 +85,7 @@ function LeftSidebar() {
 }
 
 function LayerList() {
+  const { actions } = useEditorContext();
   const layers = useEditorStore(editorSelectors.layers);
   const selectedIds = useEditorStore(editorSelectors.selectedIds);
 
@@ -93,12 +94,12 @@ function LayerList() {
   return (
     <div className="grid max-h-72 gap-2 overflow-auto pr-1">
       {layers.map((layer) => (
-        <div className={`rounded-lg border px-3 py-2 text-sm ${selectedIds.includes(layer.id) ? "border-cyan-400 bg-cyan-50" : "border-slate-200"}`} key={layer.id}>
+        <button className={`rounded-lg border px-3 py-2 text-left text-sm ${selectedIds.includes(layer.id) ? "border-cyan-400 bg-cyan-50" : "border-slate-200 hover:bg-slate-50"}`} key={layer.id} onClick={() => actions.selectById(layer.id)} type="button">
           <div className="flex items-center justify-between gap-2">
             <span className="truncate font-medium text-slate-800">{layer.name}</span>
             <span className="text-[10px] uppercase text-slate-400">{layer.type}</span>
           </div>
-        </div>
+        </button>
       ))}
     </div>
   );

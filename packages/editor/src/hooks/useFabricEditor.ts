@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ActiveSelection, Canvas, Circle, FabricImage, IText, Point, Rect, type FabricObject, type TEvent } from "fabric";
+import { ActiveSelection, Canvas, Circle, FabricImage, FabricObject, IText, Point, Rect, type TEvent, type TPointerEventInfo } from "fabric";
 import { useEditorStore } from "../store/editorStore";
 import type { ActiveObjectState, Alignment, CanvasSnapshot, EditorActions, FabricObjectWithId, LayerDirection } from "../types/editor";
 import { deserializeCanvas, serializeCanvas, snapshotsEqual } from "../utils/history";
@@ -15,10 +15,37 @@ const SNAP_THRESHOLD = 6;
 const GRID_SIZE = 10;
 
 type ClipboardObject = FabricObject | ActiveSelection | null;
-type TransformEvent = TEvent & { target?: FabricObject };
+type TransformEvent = Partial<TEvent> & { target?: FabricObject };
+type PointerEventInfo = TPointerEventInfo & { target?: FabricObject };
 
 function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
+}
+
+function getObjectId(object: FabricObject): string | null {
+  return (object as FabricObjectWithId).id ?? null;
+}
+
+function isEditingText(object: FabricObject | undefined): boolean {
+  return object instanceof IText && object.isEditing === true;
+}
+
+function prepareInteractiveObject<T extends FabricObjectWithId>(object: T, name?: string): T {
+  ensureObjectMetadata(object, name);
+  const prepared = object as T & { __editorPrepared?: boolean };
+  if (prepared.__editorPrepared) return object;
+  object.set({
+    borderColor: "#06b6d4",
+    cornerColor: "#06b6d4",
+    cornerStrokeColor: "#ffffff",
+    cornerStyle: "circle",
+    transparentCorners: false,
+    borderScaleFactor: 1.5,
+    padding: 2
+  });
+  object.setControlsVisibility({ mtr: true });
+  prepared.__editorPrepared = true;
+  return object;
 }
 
 export function useFabricEditor() {
@@ -32,10 +59,17 @@ export function useFabricEditor() {
   const lastPanPointRef = useRef<{ x: number; y: number } | null>(null);
   const [canvas, setCanvas] = useState<Canvas | null>(null);
 
+  const clearPendingHistory = useCallback(() => {
+    if (historyTimerRef.current) {
+      clearTimeout(historyTimerRef.current);
+      historyTimerRef.current = null;
+    }
+  }, []);
+
   const refreshLayers = useCallback(() => {
     const instance = canvasRef.current;
     if (!instance) return;
-    const layers = instance.getObjects().map((object, index) => toLayerState(ensureObjectMetadata(object as FabricObjectWithId), index)).reverse();
+    const layers = instance.getObjects().map((object, index) => toLayerState(prepareInteractiveObject(object as FabricObjectWithId), index)).reverse();
     useEditorStore.getState().setLayers(layers);
   }, []);
 
@@ -51,12 +85,12 @@ export function useFabricEditor() {
 
     if (active.type === "activeselection" && "getObjects" in active) {
       const objects = (active as ActiveSelection).getObjects() as FabricObjectWithId[];
-      useEditorStore.getState().setSelectedIds(objects.map((object) => ensureObjectMetadata(object).id ?? ""));
+      useEditorStore.getState().setSelectedIds(objects.map((object) => getObjectId(prepareInteractiveObject(object))).filter((id): id is string => Boolean(id)));
       useEditorStore.getState().setActiveObject(null);
       return;
     }
 
-    const object = ensureObjectMetadata(active as FabricObjectWithId);
+    const object = prepareInteractiveObject(active as FabricObjectWithId);
     useEditorStore.getState().setSelectedIds([object.id ?? ""]);
     useEditorStore.getState().setActiveObject(toActiveObjectState(object));
   }, []);
@@ -73,9 +107,13 @@ export function useFabricEditor() {
   }, []);
 
   const scheduleHistory = useCallback(() => {
-    if (historyTimerRef.current) clearTimeout(historyTimerRef.current);
-    historyTimerRef.current = setTimeout(() => commitHistory(), 250);
-  }, [commitHistory]);
+    if (isRestoringRef.current) return;
+    clearPendingHistory();
+    historyTimerRef.current = setTimeout(() => {
+      historyTimerRef.current = null;
+      commitHistory();
+    }, 250);
+  }, [clearPendingHistory, commitHistory]);
 
   const resizeCanvas = useCallback(() => {
     const instance = canvasRef.current;
@@ -111,7 +149,7 @@ export function useFabricEditor() {
   const addObject = useCallback((object: FabricObjectWithId) => {
     const instance = canvasRef.current;
     if (!instance) return;
-    ensureObjectMetadata(object);
+    prepareInteractiveObject(object);
     instance.add(object);
     instance.setActiveObject(object);
     refreshLayers();
@@ -136,15 +174,19 @@ export function useFabricEditor() {
   const loadSnapshot = useCallback(async (snapshot: CanvasSnapshot) => {
     const instance = canvasRef.current;
     if (!instance) return;
+    clearPendingHistory();
     isRestoringRef.current = true;
     instance.discardActiveObject();
-    await deserializeCanvas(instance, snapshot);
-    instance.getObjects().forEach((object) => ensureObjectMetadata(object as FabricObjectWithId));
-    isRestoringRef.current = false;
+    try {
+      await deserializeCanvas(instance, snapshot);
+      instance.getObjects().forEach((object) => prepareInteractiveObject(object as FabricObjectWithId));
+    } finally {
+      isRestoringRef.current = false;
+    }
     refreshLayers();
     refreshSelection();
     useEditorStore.getState().setZoom(instance.getZoom());
-  }, [refreshLayers, refreshSelection]);
+  }, [clearPendingHistory, refreshLayers, refreshSelection]);
 
   const updateActiveObject = useCallback((patch: Partial<ActiveObjectState>) => {
     const instance = canvasRef.current;
@@ -215,19 +257,28 @@ export function useFabricEditor() {
     if (!instance || !clipboard) return;
     const cloned = await clipboard.clone() as FabricObject | ActiveSelection;
     instance.discardActiveObject();
+    const pastedObjects: FabricObject[] = [];
     if (cloned instanceof ActiveSelection) {
       cloned.canvas = instance;
       cloned.getObjects().forEach((object) => {
-        const item = ensureObjectMetadata(object as FabricObjectWithId);
+        const item = prepareInteractiveObject(object as FabricObjectWithId);
         item.id = createObjectId(item.type ?? "object");
         item.set({ left: (item.left ?? 0) + 24, top: (item.top ?? 0) + 24 });
+        item.setCoords();
         instance.add(item);
+        pastedObjects.push(item);
       });
-      cloned.setCoords();
+      if (pastedObjects.length > 1) {
+        const selection = new ActiveSelection(pastedObjects, { canvas: instance });
+        instance.setActiveObject(selection);
+      } else if (pastedObjects[0]) {
+        instance.setActiveObject(pastedObjects[0]);
+      }
     } else {
-      const item = ensureObjectMetadata(cloned as FabricObjectWithId);
+      const item = prepareInteractiveObject(cloned as FabricObjectWithId);
       item.id = createObjectId(item.type ?? "object");
       item.set({ left: (item.left ?? 0) + 24, top: (item.top ?? 0) + 24 });
+      item.setCoords();
       instance.add(item);
       instance.setActiveObject(item);
     }
@@ -253,16 +304,16 @@ export function useFabricEditor() {
   }, []);
 
   const actions = useMemo<EditorActions>(() => ({
-    addText: () => addObject(new IText("Double-click to edit", {
+    addText: () => addObject(prepareInteractiveObject(new IText("Double-click to edit", {
       left: 160,
       top: 160,
       fontFamily: "Inter, Arial, sans-serif",
       fontSize: 64,
       fill: "#0f172a",
       padding: 8
-    }) as FabricObjectWithId),
-    addRectangle: () => addObject(new Rect({ left: 220, top: 220, width: 320, height: 180, fill: "#38bdf8", rx: 24, ry: 24 }) as FabricObjectWithId),
-    addCircle: () => addObject(new Circle({ left: 280, top: 260, radius: 110, fill: "#a78bfa" }) as FabricObjectWithId),
+    }) as FabricObjectWithId, "Text")),
+    addRectangle: () => addObject(prepareInteractiveObject(new Rect({ left: 220, top: 220, width: 320, height: 180, fill: "#38bdf8", rx: 24, ry: 24 }) as FabricObjectWithId, "Rectangle")),
+    addCircle: () => addObject(prepareInteractiveObject(new Circle({ left: 280, top: 260, radius: 110, fill: "#a78bfa" }) as FabricObjectWithId, "Circle")),
     uploadImage: async (file: File) => {
       const dataUrl = await new Promise<string>((resolve, reject) => {
         const reader = new FileReader();
@@ -273,7 +324,7 @@ export function useFabricEditor() {
       const image = await FabricImage.fromURL(dataUrl, { crossOrigin: "anonymous" });
       image.scaleToWidth(480);
       image.set({ left: 240, top: 180 });
-      addObject(image as FabricObjectWithId);
+      addObject(prepareInteractiveObject(image as FabricObjectWithId, file.name));
     },
     updateActiveObject,
     align,
@@ -289,14 +340,26 @@ export function useFabricEditor() {
     copy,
     paste,
     duplicate,
-    removeSelection,
+    removeSelection: () => {
+      if (isEditingText(canvasRef.current?.getActiveObject())) return;
+      removeSelection();
+    },
+    selectById: (id: string) => {
+      const instance = canvasRef.current;
+      if (!instance) return;
+      const object = instance.getObjects().find((candidate) => getObjectId(candidate) === id);
+      if (!object) return;
+      instance.setActiveObject(object);
+      refreshSelection();
+      instance.requestRenderAll();
+    },
     zoomIn: () => zoomTo((canvasRef.current?.getZoom() ?? 1) * 1.12),
     zoomOut: () => zoomTo((canvasRef.current?.getZoom() ?? 1) / 1.12),
     resetZoom: centerWorkspace,
     exportPng,
     serialize: () => canvasRef.current ? serializeCanvas(canvasRef.current) : null,
     deserialize: loadSnapshot
-  }), [addObject, align, centerWorkspace, copy, duplicate, exportPng, loadSnapshot, orderLayer, paste, removeSelection, updateActiveObject, zoomTo]);
+  }), [addObject, align, centerWorkspace, copy, duplicate, exportPng, loadSnapshot, orderLayer, paste, refreshSelection, removeSelection, updateActiveObject, zoomTo]);
 
   useEffect(() => {
     const element = canvasElementRef.current;
@@ -311,32 +374,48 @@ export function useFabricEditor() {
       selection: true,
       controlsAboveOverlay: true,
       fireRightClick: true,
-      stopContextMenu: true
+      stopContextMenu: true,
+      uniformScaling: false,
+      centeredScaling: false,
+      centeredRotation: false,
+      selectionFullyContained: false,
+      targetFindTolerance: 8,
+      perPixelTargetFind: false,
+      enableRetinaScaling: true
     });
 
     canvasRef.current = instance;
+    useEditorStore.setState({ activeObject: null, selectedIds: [], layers: [], history: [], redoStack: [], canUndo: false, canRedo: false });
     setCanvas(instance);
     centerWorkspace();
     commitHistory(true);
 
     const onSelection = () => refreshSelection();
     const onObjectChanged = () => {
+      if (isRestoringRef.current) return;
       refreshSelection();
       refreshLayers();
       scheduleHistory();
     };
-    const onObjectAddedRemoved = () => {
+    const onObjectAddedRemoved = (event?: TransformEvent) => {
+      if (event?.target) prepareInteractiveObject(event.target as FabricObjectWithId);
       refreshLayers();
       refreshSelection();
-      scheduleHistory();
+      if (!isRestoringRef.current) scheduleHistory();
+    };
+    const onTransforming = () => {
+      refreshSelection();
+      refreshLayers();
     };
     const onMoving = (event: TransformEvent) => {
       const target = event.target;
       if (!target) return;
       const left = target.left ?? 0;
       const top = target.top ?? 0;
-      const snappedLeft = Math.abs(left % GRID_SIZE) <= SNAP_THRESHOLD ? Math.round(left / GRID_SIZE) * GRID_SIZE : left;
-      const snappedTop = Math.abs(top % GRID_SIZE) <= SNAP_THRESHOLD ? Math.round(top / GRID_SIZE) * GRID_SIZE : top;
+      const leftRemainder = Math.abs(left % GRID_SIZE);
+      const topRemainder = Math.abs(top % GRID_SIZE);
+      const snappedLeft = leftRemainder <= SNAP_THRESHOLD || GRID_SIZE - leftRemainder <= SNAP_THRESHOLD ? Math.round(left / GRID_SIZE) * GRID_SIZE : left;
+      const snappedTop = topRemainder <= SNAP_THRESHOLD || GRID_SIZE - topRemainder <= SNAP_THRESHOLD ? Math.round(top / GRID_SIZE) * GRID_SIZE : top;
       target.set({ left: snappedLeft, top: snappedTop });
     };
     const onWheel = (event: WheelEvent) => {
@@ -384,11 +463,17 @@ export function useFabricEditor() {
     instance.on("selection:created", onSelection);
     instance.on("selection:updated", onSelection);
     instance.on("selection:cleared", onSelection);
+    const onMouseWheel = (event: PointerEventInfo) => onWheel(event.e as WheelEvent);
+
     instance.on("object:modified", onObjectChanged);
     instance.on("object:added", onObjectAddedRemoved);
     instance.on("object:removed", onObjectAddedRemoved);
     instance.on("object:moving", onMoving);
-    instance.on("mouse:wheel", (event) => onWheel(event.e as WheelEvent));
+    instance.on("object:moving", onTransforming);
+    instance.on("object:scaling", onTransforming);
+    instance.on("object:rotating", onTransforming);
+    instance.on("object:skewing", onTransforming);
+    instance.on("mouse:wheel", onMouseWheel);
     instance.on("mouse:down", onMouseDown);
     instance.on("mouse:move", onMouseMove);
     instance.on("mouse:up", onMouseUp);
@@ -398,11 +483,27 @@ export function useFabricEditor() {
 
     return () => {
       observer.disconnect();
-      if (historyTimerRef.current) clearTimeout(historyTimerRef.current);
-      instance.dispose();
+      instance.off("selection:created", onSelection);
+      instance.off("selection:updated", onSelection);
+      instance.off("selection:cleared", onSelection);
+      instance.off("object:modified", onObjectChanged);
+      instance.off("object:added", onObjectAddedRemoved);
+      instance.off("object:removed", onObjectAddedRemoved);
+      instance.off("object:moving", onMoving);
+      instance.off("object:moving", onTransforming);
+      instance.off("object:scaling", onTransforming);
+      instance.off("object:rotating", onTransforming);
+      instance.off("object:skewing", onTransforming);
+      instance.off("mouse:wheel", onMouseWheel);
+      instance.off("mouse:down", onMouseDown);
+      instance.off("mouse:move", onMouseMove);
+      instance.off("mouse:up", onMouseUp);
+      clearPendingHistory();
       canvasRef.current = null;
+      setCanvas(null);
+      void instance.dispose();
     };
-  }, [centerWorkspace, commitHistory, refreshLayers, refreshSelection, resizeCanvas, scheduleHistory, zoomTo]);
+  }, [centerWorkspace, clearPendingHistory, commitHistory, refreshLayers, refreshSelection, resizeCanvas, scheduleHistory, zoomTo]);
 
   useEffect(() => {
     const onDragOver = (event: DragEvent) => event.preventDefault();
