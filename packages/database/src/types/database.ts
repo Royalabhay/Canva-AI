@@ -64,7 +64,7 @@ export interface DesignVersion extends Timestamped { design_id: string; workspac
 export type DesignVersionInsert = Partial<Timestamped> & Pick<DesignVersion, "design_id" | "workspace_id" | "version" | "fabric_json"> & Partial<Omit<DesignVersion, keyof Timestamped | "design_id" | "workspace_id" | "version" | "fabric_json">>;
 export type DesignVersionUpdate = Partial<Omit<DesignVersion, "id" | "created_at" | "design_id" | "workspace_id">>;
 
-export interface Asset extends Timestamped { workspace_id: string; owner_id: string; kind: AssetKind; bucket: string; path: string; filename: string; mime_type: string | null; size_bytes: number | null; width: number | null; height: number | null; public_url: string | null; metadata: Json }
+export interface Asset extends Timestamped { workspace_id: string; owner_id: string; kind: AssetKind; bucket: string; path: string; filename: string; mime_type: string | null; size_bytes: number | null; width: number | null; height: number | null; public_url: string | null; cdn_url: string | null; folder_id: string | null; tags: string[]; checksum: string | null; status: string; last_used_at: string | null; metadata: Json }
 export type AssetInsert = Partial<Timestamped> & Pick<Asset, "workspace_id" | "owner_id" | "kind" | "bucket" | "path" | "filename"> & Partial<Omit<Asset, keyof Timestamped | "workspace_id" | "owner_id" | "kind" | "bucket" | "path" | "filename">>;
 export type AssetUpdate = Partial<Omit<Asset, "id" | "created_at" | "workspace_id" | "owner_id">>;
 
@@ -79,3 +79,10 @@ export type BrandKitUpdate = Partial<Omit<BrandKit, "id" | "created_at" | "works
 export interface ActivityLog extends Timestamped { workspace_id: string; actor_id: string | null; action: ActivityAction; entity_type: string; entity_id: string | null; metadata: Json }
 export type ActivityLogInsert = Partial<Timestamped> & Pick<ActivityLog, "workspace_id" | "action" | "entity_type"> & Partial<Omit<ActivityLog, keyof Timestamped | "workspace_id" | "action" | "entity_type">>;
 export type ActivityLogUpdate = Partial<Omit<ActivityLog, "id" | "created_at">>;
+
+export interface TemplateCategory extends Timestamped { slug: string; name: string; description: string | null; sort_order: number; metadata: Json }
+export interface TemplateVersion extends Timestamped { template_id: string; workspace_id: string | null; version: number; fabric_json: Json; thumbnail_url: string | null; preview_url: string | null; created_by: string | null; metadata: Json }
+export interface AssetFolder extends Timestamped { workspace_id: string; parent_id: string | null; owner_id: string; name: string; path: string; metadata: Json }
+export interface AssetTag extends Timestamped { workspace_id: string; name: string; slug: string; color: string | null }
+export interface BrandColor extends Timestamped { brand_kit_id: string; workspace_id: string; name: string; value: string; sort_order: number }
+export interface BrandFont extends Timestamped { brand_kit_id: string; workspace_id: string; name: string; family: string; weight: string | null; style: string | null; asset_id: string | null; metadata: Json }

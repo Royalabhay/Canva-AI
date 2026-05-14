@@ -28,7 +28,9 @@
     "react": "latest",
     "react-dom": "latest",
     "zod": "^4.4.3",
-    "zustand": "latest"
+    "zustand": "latest",
+    "@canva-ai/assets": "file:packages/assets",
+    "@canva-ai/templates": "file:packages/templates"
   },
   "devDependencies": {
     "@playwright/test": "^1.60.0",

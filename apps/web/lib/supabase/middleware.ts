@@ -23,8 +23,8 @@ export async function updateSession(request: NextRequest) {
     }
   });
 
-  const { data: { user } } = await supabase.auth.getUser();
-  const protectedPath = request.nextUrl.pathname.startsWith("/dashboard") || request.nextUrl.pathname.startsWith("/projects");
+  const { data: { user } } = await supabase.auth.getUser().catch(() => ({ data: { user: null } }));
+  const protectedPath = request.nextUrl.pathname.startsWith("/dashboard") || request.nextUrl.pathname.startsWith("/projects") || request.nextUrl.pathname.startsWith("/assets") || request.nextUrl.pathname.startsWith("/brand-kit");
 
   if (protectedPath && !user) {
     const url = request.nextUrl.clone();

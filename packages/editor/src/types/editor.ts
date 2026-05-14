@@ -41,6 +41,7 @@ export interface EditorActions {
   addRectangle: () => void;
   addCircle: () => void;
   uploadImage: (file: File) => Promise<void>;
+  insertImageFromUrl: (url: string, name?: string) => Promise<void>;
   updateActiveObject: (patch: Partial<ActiveObjectState>) => void;
   align: (alignment: Alignment) => void;
   orderLayer: (direction: LayerDirection) => void;

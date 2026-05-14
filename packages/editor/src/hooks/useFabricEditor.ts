@@ -188,6 +188,14 @@ export function useFabricEditor() {
     useEditorStore.getState().setZoom(instance.getZoom());
   }, [clearPendingHistory, refreshLayers, refreshSelection]);
 
+
+  const insertImageFromUrl = useCallback(async (url: string, name = "Image") => {
+    const image = await FabricImage.fromURL(url, { crossOrigin: "anonymous" });
+    image.scaleToWidth(Math.min(520, Math.max(240, image.width ?? 320)));
+    image.set({ left: 260, top: 220 });
+    addObject(prepareInteractiveObject(image as FabricObjectWithId, name));
+  }, [addObject]);
+
   const updateActiveObject = useCallback((patch: Partial<ActiveObjectState>) => {
     const instance = canvasRef.current;
     const object = instance?.getActiveObject() as FabricObjectWithId | undefined;
@@ -326,6 +334,7 @@ export function useFabricEditor() {
       image.set({ left: 240, top: 180 });
       addObject(prepareInteractiveObject(image as FabricObjectWithId, file.name));
     },
+    insertImageFromUrl,
     updateActiveObject,
     align,
     orderLayer,
@@ -359,7 +368,7 @@ export function useFabricEditor() {
     exportPng,
     serialize: () => canvasRef.current ? serializeCanvas(canvasRef.current) : null,
     deserialize: loadSnapshot
-  }), [addObject, align, centerWorkspace, copy, duplicate, exportPng, loadSnapshot, orderLayer, paste, refreshSelection, removeSelection, updateActiveObject, zoomTo]);
+  }), [addObject, align, centerWorkspace, copy, duplicate, exportPng, insertImageFromUrl, loadSnapshot, orderLayer, paste, refreshSelection, removeSelection, updateActiveObject, zoomTo]);
 
   useEffect(() => {
     const element = canvasElementRef.current;
@@ -509,6 +518,11 @@ export function useFabricEditor() {
     const onDragOver = (event: DragEvent) => event.preventDefault();
     const onDrop = (event: DragEvent) => {
       event.preventDefault();
+      const assetUrl = event.dataTransfer?.getData("application/x-canva-asset-url") || event.dataTransfer?.getData("text/uri-list");
+      if (assetUrl) {
+        void actions.insertImageFromUrl(assetUrl);
+        return;
+      }
       const file = event.dataTransfer?.files?.[0];
       if (file?.type.startsWith("image/")) void actions.uploadImage(file);
     };

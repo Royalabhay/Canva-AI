@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useRef, type ReactNode } from "react";
 import { editorSelectors, useEditorStore } from "../store/editorStore";
 import type { EditorContextValue, EditorTool } from "../types/editor";
 import { useFabricEditor } from "../hooks/useFabricEditor";
@@ -242,10 +242,16 @@ function ColorField({ label, onChange, value }: { label: string; onChange: (valu
   );
 }
 
-export function EditorShell({ autosave }: { autosave?: AutosaveConfig } = {}) {
+export function EditorShell({ autosave, initialSnapshot }: { autosave?: AutosaveConfig; initialSnapshot?: import("../types/editor").CanvasSnapshot | null } = {}) {
   const editor = useFabricEditor();
   const autosaveStatus = useEditorAutosave(autosave ?? { enabled: false });
   useEditorKeyboard(editor.actions);
+  const loadedInitialSnapshotRef = useRef(false);
+  useEffect(() => {
+    if (!initialSnapshot || loadedInitialSnapshotRef.current) return;
+    loadedInitialSnapshotRef.current = true;
+    void editor.actions.deserialize(initialSnapshot);
+  }, [editor.actions, initialSnapshot]);
 
   return (
     <EditorContext.Provider value={{ canvas: editor.canvas, actions: editor.actions }}>
