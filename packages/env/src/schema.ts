@@ -24,7 +24,8 @@ export const clientEnvSchema = z.object({
   NEXT_PUBLIC_APP_URL: urlWithDevFallback("NEXT_PUBLIC_APP_URL", "http://localhost:3000"),
   NEXT_PUBLIC_SITE_URL: urlWithDevFallback("NEXT_PUBLIC_SITE_URL", "http://localhost:3000"),
   NEXT_PUBLIC_SUPABASE_URL: urlWithDevFallback("NEXT_PUBLIC_SUPABASE_URL", localSupabaseUrl),
-  NEXT_PUBLIC_SUPABASE_ANON_KEY: requiredInProduction("NEXT_PUBLIC_SUPABASE_ANON_KEY", devAnonKey)
+  NEXT_PUBLIC_SUPABASE_ANON_KEY: requiredInProduction("NEXT_PUBLIC_SUPABASE_ANON_KEY", devAnonKey),
+  NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: requiredInProduction("NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY", "pk_test_local")
 });
 
 export const serverEnvSchema = clientEnvSchema.extend({
@@ -55,7 +56,13 @@ export const serverEnvSchema = clientEnvSchema.extend({
   CANVAS_RENDER_TIMEOUT_MS: numberFromEnv(30_000),
   REDIS_URL: z.string().optional().default("redis://127.0.0.1:6379"),
   EXPORT_WORKER_CONCURRENCY: numberFromEnv(2),
-  EXPORT_RATE_LIMIT_PER_MINUTE: numberFromEnv(30)
+  EXPORT_RATE_LIMIT_PER_MINUTE: numberFromEnv(30),
+  STRIPE_SECRET_KEY: requiredInProduction("STRIPE_SECRET_KEY", "sk_test_local"),
+  STRIPE_WEBHOOK_SECRET: requiredInProduction("STRIPE_WEBHOOK_SECRET", "whsec_local"),
+  STRIPE_PRO_MONTHLY_PRICE_ID: z.string().optional().default(""),
+  STRIPE_PRO_ANNUAL_PRICE_ID: z.string().optional().default(""),
+  STRIPE_TEAM_MONTHLY_PRICE_ID: z.string().optional().default(""),
+  STRIPE_TEAM_ANNUAL_PRICE_ID: z.string().optional().default("")
 });
 
 export type ClientEnv = z.infer<typeof clientEnvSchema>;

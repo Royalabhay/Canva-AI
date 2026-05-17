@@ -1,12 +1,14 @@
 import { type NextRequest } from "next/server";
 import { streamDesignFromPrompt, designGenerationRequestSchema } from "@canva-ai/ai";
 import { getCurrentUser } from "../../../../server/auth";
+import { consumeAiCredits } from "@canva-ai/billing/server";
 
 export const runtime = "nodejs";
 
 export async function POST(request: NextRequest) {
   const payload = designGenerationRequestSchema.parse(await request.json());
   const user = await getCurrentUser();
+  if (payload.workspaceId) await consumeAiCredits(payload.workspaceId, "ai_prompt", user?.id, 1, { mode: payload.mode, target: payload.target, streaming: true });
   const encoder = new TextEncoder();
   const stream = new ReadableStream({
     async start(controller) {
