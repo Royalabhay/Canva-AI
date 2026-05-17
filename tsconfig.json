@@ -1,0 +1,65 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": [
+      "dom",
+      "dom.iterable",
+      "ES2022"
+    ],
+    "allowJs": false,
+    "skipLibCheck": true,
+    "strict": true,
+    "noEmit": true,
+    "esModuleInterop": true,
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "jsx": "preserve",
+    "incremental": true,
+    "baseUrl": ".",
+    "paths": {
+      "@canva-ai/editor": [
+        "packages/editor/src/index.ts"
+      ],
+      "@canva-ai/editor/*": [
+        "packages/editor/src/*"
+      ],
+      "@canva-ai/export": [
+        "packages/export/src/index.ts"
+      ],
+      "@canva-ai/export/*": [
+        "packages/export/src/*"
+      ],
+      "@canva-ai/billing": [
+        "packages/billing/src/index.ts"
+      ],
+      "@canva-ai/billing/*": [
+        "packages/billing/src/*"
+      ],
+      "@canva-ai/rendering": [
+        "packages/rendering/src/index.ts"
+      ],
+      "@canva-ai/rendering/*": [
+        "packages/rendering/src/*"
+      ]
+    },
+    "plugins": [
+      {
+        "name": "next"
+      }
+    ],
+    "ignoreDeprecations": "6.0"
+  },
+  "include": [
+    "next-env.d.ts",
+    "apps/**/*.ts",
+    "apps/**/*.tsx",
+    "packages/**/*.ts",
+    "packages/**/*.tsx",
+    ".next/types/**/*.ts"
+  ],
+  "exclude": [
+    "node_modules"
+  ]
+}

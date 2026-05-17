@@ -1,0 +1,2 @@
+export function interpolateNumber(from: number, to: number, progress: number) { return from + (to - from) * progress; }
+export function ease(progress: number, kind = "linear") { if (kind === "ease-in") return progress * progress; if (kind === "ease-out") return 1 - Math.pow(1 - progress, 2); if (kind === "ease-in-out") return progress < 0.5 ? 2 * progress * progress : 1 - Math.pow(-2 * progress + 2, 2) / 2; return progress; }

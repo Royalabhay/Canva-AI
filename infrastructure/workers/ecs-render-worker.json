@@ -1,0 +1,23 @@
+{
+  "family": "canva-render-worker",
+  "requiresCompatibilities": ["FARGATE"],
+  "cpu": "2048",
+  "memory": "4096",
+  "networkMode": "awsvpc",
+  "containerDefinitions": [
+    {
+      "name": "video-worker",
+      "image": "<account>.dkr.ecr.<region>.amazonaws.com/canva-render-worker:latest",
+      "command": ["npx", "tsx", "apps/worker/video/index.ts"],
+      "essential": true,
+      "environment": [
+        { "name": "RENDER_WORKER_POOL", "value": "video-cpu" },
+        { "name": "RENDER_WORKER_CONCURRENCY", "value": "2" }
+      ],
+      "secrets": [
+        { "name": "REDIS_URL", "valueFrom": "arn:aws:ssm:<region>:<account>:parameter/canva/redis-url" },
+        { "name": "SUPABASE_SERVICE_ROLE_KEY", "valueFrom": "arn:aws:ssm:<region>:<account>:parameter/canva/supabase-service-role-key" }
+      ]
+    }
+  ]
+}

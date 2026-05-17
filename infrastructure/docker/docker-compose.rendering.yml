@@ -1,0 +1,29 @@
+services:
+  redis:
+    image: redis:7-alpine
+    command: redis-server --appendonly yes
+    ports: ["6379:6379"]
+    volumes: ["redis-data:/data"]
+  video-worker:
+    build:
+      context: ../..
+      dockerfile: infrastructure/docker/render-worker.Dockerfile
+    command: npx tsx apps/worker/video/index.ts
+    environment:
+      REDIS_URL: redis://redis:6379
+      RENDER_WORKER_POOL: video-cpu
+      RENDER_WORKER_CONCURRENCY: 2
+    depends_on: [redis]
+    deploy:
+      replicas: 2
+  thumbnail-worker:
+    build:
+      context: ../..
+      dockerfile: infrastructure/docker/render-worker.Dockerfile
+    command: npx tsx apps/worker/thumbnail/index.ts
+    environment:
+      REDIS_URL: redis://redis:6379
+      RENDER_WORKER_POOL: thumbnail-cpu
+    depends_on: [redis]
+volumes:
+  redis-data:
