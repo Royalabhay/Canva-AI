@@ -2,7 +2,7 @@ import { Queue, QueueEvents, type JobsOptions } from "bullmq";
 import { getRedisConnection } from "./connection";
 import type { ExportJobData } from "../types";
 
-export const EXPORT_QUEUE_NAME = "canva-ai:exports";
+export const EXPORT_QUEUE_NAME = "canva-ai-exports";
 
 let queue: Queue<ExportJobData> | null = null;
 let events: QueueEvents | null = null;
@@ -17,6 +17,7 @@ export function getExportQueue(): Queue<ExportJobData> {
       removeOnFail: { age: 604_800, count: 5000 }
     }
   });
+  queue.on("error", () => undefined);
   return queue;
 }
 
