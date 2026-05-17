@@ -1,0 +1,4 @@
+import { NextResponse, type NextRequest } from "next/server";
+import { createSupabaseServerClient } from "../../../../../lib/supabase/server";
+export const runtime = "nodejs";
+export async function GET(_request: NextRequest, { params }: { params: Promise<{ jobId: string }> }) { const { jobId } = await params; const db = await createSupabaseServerClient(); const { data: { user }, error } = await db.auth.getUser(); if (error || !user) return NextResponse.json({ error: "Authentication required" }, { status: 401 }); const { data, error: queryError } = await (db as any).from("render_jobs").select("*, render_outputs(*)").eq("id", jobId).eq("requested_by", user.id).maybeSingle(); if (queryError) return NextResponse.json({ error: queryError.message }, { status: 500 }); if (!data) return NextResponse.json({ error: "Render job not found" }, { status: 404 }); return NextResponse.json(data); }

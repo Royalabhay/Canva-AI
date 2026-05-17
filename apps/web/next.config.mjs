@@ -9,7 +9,7 @@ loadEnvConfig(path.join(repoRoot, "apps/web"), process.env.NODE_ENV !== "product
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  transpilePackages: ["@canva-ai/editor", "@canva-ai/database", "@canva-ai/env", "@canva-ai/templates", "@canva-ai/assets", "@canva-ai/ai", "@canva-ai/billing", "@canva-ai/export"],
+  transpilePackages: ["@canva-ai/editor", "@canva-ai/database", "@canva-ai/env", "@canva-ai/templates", "@canva-ai/assets", "@canva-ai/ai", "@canva-ai/billing", "@canva-ai/export", "@canva-ai/rendering"],
   experimental: {
     serverActions: {
       bodySizeLimit: "5mb"

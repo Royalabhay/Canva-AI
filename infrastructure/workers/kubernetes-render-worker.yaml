@@ -1,0 +1,26 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: canva-video-render-workers
+spec:
+  replicas: 3
+  selector:
+    matchLabels: { app: canva-video-render-worker }
+  template:
+    metadata:
+      labels: { app: canva-video-render-worker }
+      annotations:
+        prometheus.io/scrape: "true"
+    spec:
+      containers:
+        - name: worker
+          image: canva-render-worker:latest
+          command: ["npx", "tsx", "apps/worker/video/index.ts"]
+          env:
+            - name: RENDER_WORKER_POOL
+              value: video-cpu
+            - name: REDIS_URL
+              valueFrom: { secretKeyRef: { name: canva-rendering, key: redis-url } }
+          resources:
+            requests: { cpu: "1", memory: 2Gi }
+            limits: { cpu: "4", memory: 8Gi }

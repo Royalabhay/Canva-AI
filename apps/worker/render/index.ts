@@ -1,1 +1,1 @@
-export { renderExport, renderImage, renderPdf, renderSvg, prepareMp4Composition } from "@canva-ai/export/server";
+export { createRenderWorker, requestRender, renderTimelineVideo, processVideoRenderJob, processThumbnailJob, processTranscodeJob } from "@canva-ai/rendering/server";

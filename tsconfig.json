@@ -36,6 +36,12 @@
       ],
       "@canva-ai/billing/*": [
         "packages/billing/src/*"
+      ],
+      "@canva-ai/rendering": [
+        "packages/rendering/src/index.ts"
+      ],
+      "@canva-ai/rendering/*": [
+        "packages/rendering/src/*"
       ]
     },
     "plugins": [

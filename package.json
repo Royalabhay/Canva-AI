@@ -15,6 +15,7 @@
   "dependencies": {
     "@canva-ai/ai": "file:packages/ai",
     "@canva-ai/assets": "file:packages/assets",
+    "@canva-ai/billing": "file:packages/billing",
     "@canva-ai/database": "file:packages/database",
     "@canva-ai/editor": "file:packages/editor",
     "@canva-ai/env": "file:packages/env",
@@ -35,6 +36,8 @@
     "ai": "^6.0.182",
     "bullmq": "^5.76.8",
     "fabric": "latest",
+    "ffmpeg-static": "^5.3.0",
+    "ffprobe-static": "^3.1.0",
     "ioredis": "^5.10.1",
     "langchain": "^1.4.0",
     "next": "latest",
@@ -47,7 +50,7 @@
     "stripe": "^22.1.1",
     "zod": "^4.4.3",
     "zustand": "latest",
-    "@canva-ai/billing": "file:packages/billing"
+    "@canva-ai/rendering": "file:packages/rendering"
   },
   "devDependencies": {
     "@playwright/test": "^1.60.0",

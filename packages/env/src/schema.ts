@@ -62,7 +62,10 @@ export const serverEnvSchema = clientEnvSchema.extend({
   STRIPE_PRO_MONTHLY_PRICE_ID: z.string().optional().default(""),
   STRIPE_PRO_ANNUAL_PRICE_ID: z.string().optional().default(""),
   STRIPE_TEAM_MONTHLY_PRICE_ID: z.string().optional().default(""),
-  STRIPE_TEAM_ANNUAL_PRICE_ID: z.string().optional().default("")
+  STRIPE_TEAM_ANNUAL_PRICE_ID: z.string().optional().default(""),
+  RENDER_WORKER_CONCURRENCY: numberFromEnv(2),
+  RENDER_WORKER_POOL: z.string().optional().default("video-cpu"),
+  GPU_ENABLED: z.coerce.boolean().catch(false)
 });
 
 export type ClientEnv = z.infer<typeof clientEnvSchema>;
